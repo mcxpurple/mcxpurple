@@ -8,7 +8,7 @@ import yaml
 """
 GPT_RP.py — 多角色混戰（N 角色一次回覆）
 ------------------------------------------------
-* 依照 `characters: ["erwin", "levi", ...]` 陣列，逐一載入對應 YAML
+* 依照 `characters: ["lior", ...]` 陣列，逐一載入對應 YAML
 * 沒傳 `characters` 時 fallback 到 `DEFAULT_CHAR`
 * 回傳格式：
   {
@@ -24,7 +24,7 @@ GPT_RP.py — 多角色混戰（N 角色一次回覆）
 # 常數設定
 # --------------------
 CHAR_DIR = "characters"       # 存放角色卡的資料夾
-DEFAULT_CHAR = "lazul"        # 沒帶 characters 時的預設角色
+DEFAULT_CHAR = "lior"        # 沒帶 characters 時的預設角色
 
 # --------------------
 # 資料結構
