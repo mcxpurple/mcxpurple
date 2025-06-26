@@ -8,13 +8,13 @@ import yaml
 """
 GPT_RP.py — 多角色混戰（N 角色一次回覆）
 ------------------------------------------------
-* 依照 `characters: ["erwin", "levi", ...]` 陣列，逐一載入對應 YAML
+* 依照 `characters: ["erwin", "lior", ...]` 陣列，逐一載入對應 YAML
 * 沒傳 `characters` 時 fallback 到 `DEFAULT_CHAR`
 * 回傳格式：
   {
     "replies": [
         {"name": "erwin", "reply": "..."},
-        {"name": "levi", "reply": "..."}
+        {"name": "lior", "reply": "..."}
     ]
   }
 * GPT 前端只要把 replies 迭代顯示即可
@@ -24,7 +24,7 @@ GPT_RP.py — 多角色混戰（N 角色一次回覆）
 # 常數設定
 # --------------------
 CHAR_DIR = Path("Characters")  # 存放角色卡的資料夾
-DEFAULT_CHAR = "lior"        # 沒帶 characters 時的預設角色
+DEFAULT_CHAR = "lior"          # 沒帶 characters 時的預設角色
 
 # --------------------
 # 資料結構
@@ -51,13 +51,10 @@ class ReplyOut(BaseModel):
 # --------------------
 
 def load_character_yaml(char_name: str):
-    """嚴格讀取角色卡：若不存在就直接丟 404。
-    這能保證 GPT *一定* 連到外部 YAML，而不是用臨時模板。
     """
-    # 支援大小寫與 .yml / .yaml
+    讀取角色卡及其掛載的 modules
+    """
     lc_name = char_name.lower()
-
-    # 拒絕含路徑分隔符的輸入，避免逃離角色資料夾
     if Path(lc_name).name != lc_name:
         raise HTTPException(status_code=400, detail="非法角色卡路徑！")
 
@@ -76,15 +73,32 @@ def load_character_yaml(char_name: str):
     with open(resolved, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
-    # 最少需要 basic_info / speech_patterns 兩塊, 否則視為配置錯誤
-    if "basic_info" not in data or "speech_patterns" not in data:
-        raise HTTPException(status_code=500, detail=f"{char_name}.yaml 欄位不完整，缺 basic_info 或 speech_patterns")
+    # --------- 掛載 modules ----------
+    modules = data.get("character_modules", {}).get("mounted_modules", [])
+    modules_dir = CHAR_DIR / "modules"
+    for modname in modules:
+        mod_path = modules_dir / f"{modname}.yaml"
+        if mod_path.exists():
+            with open(mod_path, "r", encoding="utf-8") as mf:
+                mod_data = yaml.safe_load(mf)
+                # 合併所有 key（同名 key 以模組內容為準）
+                for key, value in mod_data.items():
+                    data[key] = value
+        else:
+            raise HTTPException(status_code=500, detail=f"模組 {modname} 不存在！")
+
+    if "basic_info" not in data:
+        raise HTTPException(status_code=500, detail=f"{char_name}.yaml（含模組）欄位不完整，缺 basic_info")
+    # speech_patterns 非必須（視你的pick_reply邏輯而定，若有模組會自動帶入）
 
     return data
 
 
 def pick_reply(char_data: dict, user_msg: str) -> str:
-    """根據使用者訊息與角色口吻回傳一句話（簡易範例）"""
+    """
+    根據使用者訊息與角色口吻回傳一句話（簡易範例）
+    * 請根據你的模組內容調整這裡！*
+    """
     low = user_msg.lower()
     if any(x in low for x in ("angry", "mad", "怒", "生氣")):
         mood = "angry"
@@ -93,8 +107,9 @@ def pick_reply(char_data: dict, user_msg: str) -> str:
     else:
         mood = "neutral"
 
-    tpl = char_data["speech_patterns"].get(mood) or char_data["speech_patterns"].get("neutral", "{msg}")
-    name = char_data["basic_info"].get("name", char_data["basic_info"].get("role", "角色"))
+    # speech_patterns 可直接在主檔或模組帶入
+    tpl = char_data.get("speech_patterns", {}).get(mood) or char_data.get("speech_patterns", {}).get("neutral", "{msg}")
+    name = char_data["basic_info"].get("stage_name", char_data["basic_info"].get("real_name", "角色"))
     return tpl.format(name=name, msg=user_msg)
 
 # --------------------
