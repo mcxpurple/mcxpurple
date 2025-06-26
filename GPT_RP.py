@@ -110,7 +110,7 @@ def load_character_yaml(char_name: str):
     modules_dir = CHAR_DIR / "modules"
     
     for modname in modules:
-        mod_path = modules_dir / f"{modname}.yaml"
+        mod_path = modules_dir / f"Module_{modname}.yaml"
         if mod_path.exists():
             try:
                 with open(mod_path, "r", encoding="utf-8") as mf:
