@@ -113,64 +113,60 @@ def load_character_yaml(char_name: str):
     for modname in modules:
         mod_path = modules_dir / f"Module_{modname}.yaml"
         
-        # 特殊處理 GlobalEventModule，繞過 Render 可能的隱藏字符讀取問題
-        if modname.lower() == "globaleventmodule" and mod_path.exists():
+        if mod_path.exists():
             try:
                 with open(mod_path, "r", encoding="utf-8") as mf:
                     raw_content = mf.read()
                     
-                    # 【核心修正】在這裡強制淨化字符串，移除可能的隱藏字符
-                    # 包含不可見的零寬度字符、BOM、一些控制字符以及 Unicode 替換字符
-                    cleaned_content = re.sub(r'[\u200b\u200c\u200d\uFEFF\uFFFD\u0000-\u001F]', '', raw_content)
+                    # 步驟1：對原始文件內容進行第一次淨化和解析
+                    # 移除常見的不可見字符、BOM、一些控制字符和Unicode替換字符
+                    cleaned_content_stage1 = re.sub(r'[\u200b\u200c\u200d\uFEFF\uFFFD\u0000-\u001F]', '', raw_content)
                     
-                    # 嘗試從原始內容中提取 'sections_raw'
-                    # 這裡假設 GlobalEventModule.yaml 會包含一個 'sections_raw' 鍵，其值是包含所有配置的原始字符串
-                    temp_data = yaml.safe_load(cleaned_content) # 使用淨化後的內容進行第一次解析
-                    if temp_data and 'sections_raw' in temp_data:
-                        # 將 sections_raw 的字符串內容再次解析為 YAML
-                        # 在第二次解析前，也對 sections_raw 的內容進行淨化
-                        parsed_sections_raw = temp_data['sections_raw']
-                        cleaned_parsed_sections_raw = re.sub(r'[\u200b\u200c\u200d\uFEFF\uFFFD\u0000-\u001F]', '', parsed_sections_raw)
+                    temp_parsed_data = yaml.safe_load(cleaned_content_stage1)
+                    
+                    final_mod_data = {}
+
+                    if isinstance(temp_parsed_data, dict) and 'sections_raw' in temp_parsed_data:
+                        # 如果模組是包裝在 sections_raw 裡的（例如 GlobalEventModule）
+                        raw_sections_content = temp_parsed_data['sections_raw']
+                        # 對 sections_raw 的內容進行第二次淨化，確保雙重保險
+                        cleaned_sections_content = re.sub(r'[\u200b\u200c\u200d\uFEFF\uFFFD\u0000-\u001F]', '', raw_sections_content)
                         
-                        parsed_sections = yaml.safe_load(cleaned_parsed_sections_raw)
+                        parsed_from_sections_raw = yaml.safe_load(cleaned_sections_content)
                         
-                        # 將解析後的 sections 合併到主數據中
-                        if parsed_sections: # 確保解析出的內容不是 None
-                            for key, value in parsed_sections.items():
-                                data[key] = value
-                        logging.info(f"模組 {modname} (特殊處理) 載入成功。")
-                        continue # 繼續下一個模組
+                        if parsed_from_sections_raw is None: # handle empty sections_raw
+                            parsed_from_sections_raw = {}
+
+                        if isinstance(parsed_from_sections_raw, dict):
+                            final_mod_data = parsed_from_sections_raw
+                            logging.info(f"模組 {modname} (從 sections_raw 載入並淨化) 載入成功。")
+                        else:
+                            # If sections_raw content itself is not a dict or invalid after parsing
+                            logging.error(f"模組 {modname} 的 sections_raw 內容格式無效。")
+                            raise HTTPException(status_code=500, detail=f"模組 {modname} 的 sections_raw 內容格式無效。")
+                    elif isinstance(temp_parsed_data, dict):
+                        # 如果模組是普通的 YAML 字典，且沒有 sections_raw 包裝
+                        final_mod_data = temp_parsed_data
+                        logging.info(f"模組 {modname} (直接載入並淨化) 載入成功。")
+                    elif temp_parsed_data is None:
+                        # 如果文件為空或僅含註釋，safe_load 可能返回 None
+                        final_mod_data = {}
+                        logging.warning(f"模組文件 {mod_path} 為空或內容無效，載入為空字典。")
                     else:
-                        logging.error(f"特殊模組 {modname} 檔案格式錯誤或缺少 'sections_raw'。")
-                        raise HTTPException(status_code=500, detail=f"特殊模組 {modname} 檔案格式錯誤。")
-            except yaml.YAMLError as e:
-                logging.error(f"解析特殊模組 {mod_path} 內容失敗 (YAML Error): {e}")
-                raise HTTPException(status_code=500, detail=f"解析模組 {modname} 內容失敗。")
-            except Exception as e:
-                logging.error(f"讀取或處理特殊模組 {mod_path} 時發生未知錯誤: {e}")
-                raise HTTPException(status_code=500, detail=f"處理特殊模組 {modname} 時發生未知錯誤。")
-        
-        # 正常處理其他模組
-        if mod_path.exists():
-            try:
-                with open(mod_path, "r", encoding="utf-8") as mf:
-                    raw_mod_data = mf.read() # 先讀取原始內容
-                    # 對其他模組也進行一次基本的淨化，以防萬一
-                    cleaned_mod_data = re.sub(r'[\u200b\u200c\u200d\uFEFF\uFFFD\u0000-\u001F]', '', raw_mod_data)
-                    mod_data = yaml.safe_load(cleaned_mod_data)
-                    
-                    if mod_data is None:
-                        mod_data = {}
-                        logging.warning(f"模組文件 {mod_path} 為空或內容無效。")
-                    for key, value in mod_data.items():
-                        data[key] = value
-                logging.info(f"模組 {modname} 載入成功。")
+                        # 如果是非預期的頂層類型 (e.g., list at top level of a module yaml)
+                        logging.error(f"模組 {modname} 頂層內容格式非字典類型，載入失敗。")
+                        raise HTTPException(status_code=500, detail=f"模組 {modname} 頂層內容格式無效。")
+
+                # 合併最終載入的模組數據
+                for key, value in final_mod_data.items():
+                    data[key] = value
+
             except yaml.YAMLError as e:
                 logging.error(f"解析模組 {mod_path} 失敗 (YAML Error): {e}")
                 raise HTTPException(status_code=500, detail=f"解析模組 {modname}.yaml 時發生錯誤：{e}")
             except Exception as e:
-                logging.error(f"讀取模組 {mod_path} 時發生未知錯誤: {e}")
-                raise HTTPException(status_code=500, detail=f"讀取模듈 {modname}.yaml 時發生未知錯誤。")
+                logging.error(f"讀取或處理模組 {mod_path} 時發生未知錯誤: {e}")
+                raise HTTPException(status_code=500, detail=f"處理模組 {modname} 時發生未知錯誤。")
         else:
             logging.error(f"模組 {modname} 不存在於 {modules_dir}。")
             raise HTTPException(status_code=500, detail=f"模組 {modname} 不存在！")
