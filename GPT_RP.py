@@ -2,13 +2,13 @@ from fastapi import FastAPI, APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
-import os
+from pathlib import Path
 import yaml
 
 """
 GPT_RP.py — 多角色混戰（N 角色一次回覆）
 ------------------------------------------------
-* 依照 `characters: ["lior", ...]` 陣列，逐一載入對應 YAML
+* 依照 `characters: ["erwin", "levi", ...]` 陣列，逐一載入對應 YAML
 * 沒傳 `characters` 時 fallback 到 `DEFAULT_CHAR`
 * 回傳格式：
   {
@@ -23,7 +23,7 @@ GPT_RP.py — 多角色混戰（N 角色一次回覆）
 # --------------------
 # 常數設定
 # --------------------
-CHAR_DIR = "characters"       # 存放角色卡的資料夾
+CHAR_DIR = Path("characters")  # 存放角色卡的資料夾
 DEFAULT_CHAR = "lior"        # 沒帶 characters 時的預設角色
 
 # --------------------
@@ -56,17 +56,24 @@ def load_character_yaml(char_name: str):
     """
     # 支援大小寫與 .yml / .yaml
     lc_name = char_name.lower()
-    candidates = [
-        os.path.join(CHAR_DIR, f"{lc_name}.yaml"),
-        os.path.join(CHAR_DIR, f"{lc_name}.yml"),
-    ]
-    path = next((p for p in candidates if os.path.exists(p)), None)
-    if not path:
-        raise HTTPException(status_code=404, detail=f"角色卡 {char_name} 不存在！")
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"角色卡 {char_name}.yaml 不存在！")
 
-    with open(path, "r", encoding="utf-8") as f:
+    # 拒絕含路徑分隔符的輸入，避免逃離角色資料夾
+    if Path(lc_name).name != lc_name:
+        raise HTTPException(status_code=400, detail="非法角色卡路徑！")
+
+    for ext in (".yaml", ".yml"):
+        candidate = CHAR_DIR / f"{lc_name}{ext}"
+        if candidate.exists():
+            resolved = candidate.resolve()
+            break
+    else:
+        raise HTTPException(status_code=404, detail=f"角色卡 {char_name} 不存在！")
+    try:
+        resolved.relative_to(CHAR_DIR.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="角色卡路徑越界！")
+
+    with open(resolved, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     # 最少需要 basic_info / speech_patterns 兩塊, 否則視為配置錯誤
@@ -119,7 +126,10 @@ async def health():
 
 @router.get("/list_roles")
 async def list_roles():
-    roles = [f[:-5] for f in os.listdir(CHAR_DIR) if f.endswith(".yaml")]
+    roles = []
+    for f in CHAR_DIR.iterdir():
+        if f.suffix.lower() in (".yaml", ".yml"):
+            roles.append(f.stem)
     return {"roles": roles}
 
 # --------------------
