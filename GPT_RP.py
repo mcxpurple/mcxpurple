@@ -111,21 +111,44 @@ def load_character_yaml(char_name: str):
     
     for modname in modules:
         mod_path = modules_dir / f"Module_{modname}.yaml"
+        
+        # 特殊處理 GlobalEventModule，繞過 Render 可能的隱藏字符讀取問題
+        if modname.lower() == "globaleventmodule" and mod_path.exists():
+            try:
+                with open(mod_path, "r", encoding="utf-8") as mf:
+                    raw_content = mf.read()
+                    # 嘗試從原始內容中提取 'sections_raw'
+                    # 這裡假設 GlobalEventModule.yaml 會包含一個 'sections_raw' 鍵，其值是包含所有配置的原始字符串
+                    temp_data = yaml.safe_load(raw_content)
+                    if temp_data and 'sections_raw' in temp_data:
+                        # 將 sections_raw 的字符串內容再次解析為 YAML
+                        parsed_sections = yaml.safe_load(temp_data['sections_raw'])
+                        # 將解析後的 sections 合併到主數據中
+                        for key, value in parsed_sections.items():
+                            data[key] = value
+                        logging.info(f"模組 {modname} (特殊處理) 載入成功。")
+                        continue # 繼續下一個模組
+                    else:
+                        logging.error(f"特殊模組 {modname} 檔案格式錯誤或缺少 'sections_raw'。")
+                        raise HTTPException(status_code=500, detail=f"特殊模組 {modname} 檔案格式錯誤。")
+            except yaml.YAMLError as e:
+                logging.error(f"解析特殊模組 {mod_path} 內容失敗: {e}")
+                raise HTTPException(status_code=500, detail=f"解析模組 {modname} 內容失敗。")
+            except Exception as e:
+                logging.error(f"讀取或處理特殊模組 {mod_path} 時發生未知錯誤: {e}")
+                raise HTTPException(status_code=500, detail=f"處理特殊模組 {modname} 時發生未知錯誤。")
+        
+        # 正常處理其他模組
         if mod_path.exists():
             try:
                 with open(mod_path, "r", encoding="utf-8") as mf:
                     mod_data = yaml.safe_load(mf)
-                    # 【改進點 7】空模組文件處理：同角色卡，如果模組文件為空，safe_load 可能返回 None
                     if mod_data is None:
                         mod_data = {}
                         logging.warning(f"模組文件 {mod_path} 為空或內容無效。")
-                    
-                    # 合併所有 key（同名 key 以模組內容為準）
-                    # 注意：這裡的合併邏輯是淺層合併，如果模組和主角色卡有相同的嵌套字典，
-                    # 模組的字典會完全覆蓋主角色卡的字典。如果需要深度合併，需要額外邏輯。
-                    # 對於目前的 YAML 結構（主要是列表），淺層合併通常足夠。
                     for key, value in mod_data.items():
                         data[key] = value
+                logging.info(f"模組 {modname} 載入成功。")
             except yaml.YAMLError as e:
                 logging.error(f"解析模組 {mod_path} 失敗: {e}")
                 raise HTTPException(status_code=500, detail=f"解析模組 {modname}.yaml 時發生錯誤：{e}")
@@ -133,9 +156,9 @@ def load_character_yaml(char_name: str):
                 logging.error(f"讀取模組 {mod_path} 時發生未知錯誤: {e}")
                 raise HTTPException(status_code=500, detail=f"讀取模組 {modname}.yaml 時發生未知錯誤。")
         else:
-            # 【改進點 8】日誌：當模組不存在時，輸出日誌
             logging.error(f"模組 {modname} 不存在於 {modules_dir}。")
             raise HTTPException(status_code=500, detail=f"模組 {modname} 不存在！")
+    # 到這段結束
 
     if "basic_info" not in data:
         logging.error(f"角色卡 {char_name}.yaml（含模組）欄位不完整，缺 basic_info。")
@@ -272,4 +295,3 @@ if __name__ == "__main__":
     # reload 模式會監控文件變化並重啟應用，適合開發環境
     # 對於生產部署，通常會使用 gunicorn 等工具管理 Uvicorn worker
     uvicorn.run("GPT_RP:app", host="0.0.0.0", port=8000, reload=True)
-
