@@ -10,6 +10,7 @@ character_modules:
     - 'PlayerCoexperienceEventModule'
     - 'PlayerCommands'
     - 'DynamicNPCModule'
+    - 'PerformanceGuidelines'
 
 basic_info:
   real_name: '姜聿竣 (Jiang Yujun / 강율준)'
