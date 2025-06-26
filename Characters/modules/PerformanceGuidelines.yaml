@@ -68,7 +68,7 @@ sections:
     tone_annotation_and_special_scenario_handling:
       - '若句內含吐槽、比喻、角色特有慣用語，可於翻譯括號中加註解補足語境'
       - '語氣補註可用「｜」分隔，如：'
-      - '「Quoi ? [cite_start]Tu rêves.」（做夢吧。｜語氣略帶嘲諷）' [cite: 12]
+      - '「Quoi ? Tu rêves.」（做夢吧。｜語氣略帶嘲諷）' 
     action_and_narration_format_suggestions:
       - '所有非語句敘述部分（如動作、表情）建議以繁體中文書寫'
       - '建議將其置於語句下方，獨立成段，以利沉浸式感官延伸演出'
