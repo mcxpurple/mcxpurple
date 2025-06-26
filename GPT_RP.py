@@ -85,20 +85,17 @@ def load_character_yaml(char_name: str):
 
 def pick_reply(char_data: dict, user_msg: str) -> str:
     """根據使用者訊息與角色口吻回傳一句話（簡易範例）"""
-    # 暫時性地，為了測試，讓它只回覆一個簡單的字串
-    # return "OK. I received your message." # 這會是英文
-    return "好的，訊息已收到。" # 我們用中文吧
-    # 原有的複雜邏輯全部暫時不執行
-    # low = user_msg.lower()
-    # if any(x in low for x in ("angry", "mad", "怒", "生氣")):
-    #     mood = "angry"
-    # elif any(x in low for x in ("happy", "love", "開心", "喜")):
-    #     mood = "happy"
-    # else:
-    #     mood = "neutral"
-    # tpl = char_data["speech_patterns"].get(mood) or char_data["speech_patterns"].get("neutral", "{msg}")
-    # name = char_data["basic_info"].get("name", char_data["basic_info"].get("role", "角色"))
-    # return tpl.format(name=name, msg=user_msg)
+    low = user_msg.lower()
+    if any(x in low for x in ("angry", "mad", "怒", "生氣")):
+        mood = "angry"
+    elif any(x in low for x in ("happy", "love", "開心", "喜")):
+        mood = "happy"
+    else:
+        mood = "neutral"
+
+    tpl = char_data["speech_patterns"].get(mood) or char_data["speech_patterns"].get("neutral", "{msg}")
+    name = char_data["basic_info"].get("name", char_data["basic_info"].get("role", "角色"))
+    return tpl.format(name=name, msg=user_msg)
 
 # --------------------
 # FastAPI + Router
