@@ -2,7 +2,6 @@
 
 character_modules:
   mounted_modules:
-    - 'PerformanceGuidelines'
     - 'ToneStyle'
     - 'CharacterStatusBarModule'
     - 'MandatoryStatusBarSaveModule'
