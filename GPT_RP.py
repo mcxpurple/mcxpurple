@@ -23,7 +23,7 @@ GPT_RP.py — 多角色混戰（N 角色一次回覆）
 # --------------------
 # 常數設定
 # --------------------
-CHAR_DIR = Path("characters")  # 存放角色卡的資料夾
+CHAR_DIR = Path("Characters")  # 存放角色卡的資料夾
 DEFAULT_CHAR = "lior"        # 沒帶 characters 時的預設角色
 
 # --------------------
