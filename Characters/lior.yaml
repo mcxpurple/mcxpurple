@@ -2,14 +2,14 @@
 
 character_modules:
   mounted_modules:
-    - 'ToneStyle'
-    - 'CharacterStatusBarModule'
-    - 'MandatoryStatusBarSaveModule'
-    - 'GlobalEventModule'
-    - 'ActivationModule'
-    - 'PlayerCoexperienceEventModule'
-    - 'PlayerCommands'
-    - 'DynamicNPCModule'
+    - 'Module_ToneStyle'
+    - 'Module_CharacterStatusBarModule'
+    - 'Module_MandatoryStatusBarSaveModule'
+    - 'Module_GlobalEventModule'
+    - 'Module_ActivationModule'
+    - 'Module_PlayerCoexperienceEventModule'
+    - 'Module_PlayerCommands'
+    - 'Module_DynamicNPCModule'
 
 basic_info:
   real_name: '姜聿竣 (Jiang Yujun / 강율준)'
