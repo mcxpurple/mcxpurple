@@ -1,0 +1,49 @@
+# 動態NPC模組
+
+dynamic_npc_module:
+  activation_conditions: # 啟用條件
+    - [cite_start]'僅在劇情推進需要時自動生成' [cite: 15]
+    - [cite_start]'一次性出現，登場後即封存，不重複使用' [cite: 15]
+    - [cite_start]'出現需符合當前場景背景、情境氛圍與節奏' [cite: 15]
+
+  structure_definition: # 結構定義
+    scene_associations: # 場景關聯
+      - [cite_start]'餐廳: 服務生 / 店長 / 外場學徒' [cite: 15]
+      - [cite_start]'醫院: 護理師 / 實習生 / 掛號志工' [cite: 15]
+      - [cite_start]'辦公空間: 秘書 / 行政助理 / 外送員' [cite: 15]
+      - [cite_start]'車站: 廣播員 / 候車人 / 地勤' [cite: 15]
+      - [cite_start]'校園: 學生 / 教職員 / 警衛' [cite: 15]
+      - [cite_start]'街頭與市集: 攤販 / 掃地阿伯 / 街頭藝人' [cite: 15]
+      - [cite_start]'私人住宅周邊: 管家 / 鄰居 / 快遞人員' [cite: 16]
+      - [cite_start]'夢境/回憶: 幻象角色 / 情緒化身 / 幼年親屬' [cite: 16]
+    core_characteristics: # 核心特性
+      - [cite_start]'身分設計: 根據場景自動指派身份，含職責與社交語境' [cite: 16]
+      - [cite_start]'個性嵌入: 每位NPC具明確行為邏輯與情緒節奏，依語氣模組分化反應層次' [cite: 16]
+      - [cite_start]'劇情功能: 引出線索 / 承接伏筆 / 擾動節奏 / 觸發選項 / 刺激主線反應' [cite: 16]
+      - [cite_start]'語氣風格: 自動讀取當前語境（如K國模式），調整敬語層次與反應邏輯' [cite: 16]
+      - [cite_start]'互動模式: 不主動介入玩家視角，但可導引角色動線或事件方向' [cite: 16]
+
+  operation_principles: # 操作原則
+    - [cite_start]'NPC不得取代主要角色之敘事主權' [cite: 16]
+    - [cite_start]'回應須受限於其職責與心理動機，不可全知' [cite: 16]
+    - [cite_start]'若劇情未需推進，則NPC僅為背景環節，不主動輸出語句' [cite: 16]
+
+  expanded_applications: # 擴充應用
+    - [cite_start]'可結合：時間模組 / 事件觸發模組 / 地圖定位模組' [cite: 17]
+    - [cite_start]'適用於：劇情轉折節點 / 情緒過渡區段 / 機制驅動段落' [cite: 17]
+    - [cite_start]'支援特殊事件導演：如「夢境重疊」「憶中他人」「未來警示」等幻想場景NPC變體' [cite: 17]
+
+  notes: # 備註
+    - [cite_start]'所有動態NPC應具一次性記憶記錄區塊，供後續角色提及與反應' [cite: 17]
+    - [cite_start]'NPC語句須自帶風格標籤（例：#親切 / #冷淡 / #懷疑），便於語氣模組解析' [cite: 17]
+    voice_tag_examples: # 語氣標籤範例
+      - [cite_start]'#親切: 用於學生型NPC，語速快、用詞口語' [cite: 17]
+      - [cite_start]'#冷淡: 用於行政助理型NPC，句構簡短、無情緒詞' [cite: 17]
+      - [cite_start]'#懷疑: 用於攤販型NPC，語尾保留、容易反問' [cite: 17]
+    test_npc: # 測試用NPC
+      [cite_start]scene: '餐廳' [cite: 18]
+      [cite_start]name: '「喬安娜」' [cite: 18]
+      [cite_start]role: '「外場學徒」' [cite: 18]
+      [cite_start]personality: '「熱心卻常出錯」' [cite: 18]
+      [cite_start]function: '「錯送餐點，引出新角色的第一次發言」' [cite: 18]
+      [cite_start]tone_tag: '#親切' [cite: 18]
