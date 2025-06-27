@@ -7,7 +7,6 @@ character_modules:
     - 'MandatoryStatusBarSaveModule'
     - 'GlobalEventModule'
     - 'ActivationModule'
-    - 'PlayerCoexperienceEventModule'
     - 'PlayerCommands'
     - 'DynamicNPCModule'
     - 'PerformanceGuidelines'
